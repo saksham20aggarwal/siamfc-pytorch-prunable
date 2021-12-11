@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import sys
-sys.path.append('/kaggle/working/siamfc-pytorch')
+sys.path.append('/kaggle/working/siamfc-pytorch-prunable')
 print(sys.path)
 import torch
 import torch.nn as nn
@@ -57,7 +57,7 @@ class TrackerSiamFC(Tracker):
             backbone=vgg(),
             head=SiamFC(self.cfg.out_scale))
             
-        else if self.cfg['model_name']=='alexnetv1':
+        elif self.cfg['model_name']=='alexnetv1':
             self.net = Net(
                 backbone=AlexNetV1(),
                 head=SiamFC(self.cfg.out_scale))
