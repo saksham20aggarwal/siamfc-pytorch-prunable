@@ -1,8 +1,11 @@
 from __future__ import absolute_import, division, print_function
-
+import sys
+sys.path.append('/kaggle/working/siamfc-pytorch')
+print(sys.path)
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from tqdm import tqdm
 import torch.optim as optim
 import numpy as np
 import time
@@ -37,7 +40,6 @@ class Net(nn.Module):
         x = self.backbone(x)
         return self.head(z, x)
 
-
 class TrackerSiamFC(Tracker):
 
     def __init__(self, net_path=None, **kwargs):
@@ -47,6 +49,7 @@ class TrackerSiamFC(Tracker):
         # setup GPU device if available
         self.cuda = torch.cuda.is_available()
         self.device = torch.device('cuda:0' if self.cuda else 'cpu')
+        self.LOGGER = self.init_logger(log_file = '/kaggle/working/train.log')
 
         # setup model
         self.net = Net(
@@ -75,7 +78,26 @@ class TrackerSiamFC(Tracker):
             self.cfg.ultimate_lr / self.cfg.initial_lr,
             1.0 / self.cfg.epoch_num)
         self.lr_scheduler = ExponentialLR(self.optimizer, gamma)
-
+    
+    def init_logger(self,log_file='/kaggle/working/train.log'):
+        from logging import getLogger, INFO, FileHandler,  Formatter,  StreamHandler
+        logger = getLogger(__name__)
+        logger.setLevel(INFO)
+        handler1 = StreamHandler()
+        handler1.setFormatter(Formatter("%(message)s"))
+        handler2 = FileHandler(filename=log_file)
+        handler2.setFormatter(Formatter("%(message)s"))
+        logger.addHandler(handler1)
+        logger.addHandler(handler2)
+        return logger
+        
+    # additional subgradient descent on the sparsity-induced penalty term
+    def updateBN(self):
+        for m in self.net.backbone.modules():
+            if isinstance(m, nn.BatchNorm2d):
+                m.weight.grad.data.add_(self.cfg.s*torch.sign(m.weight.data))  # L1
+#                 print('updated')
+            
     def parse_args(self, **kwargs):
         # default parameters
         cfg = {
@@ -94,14 +116,16 @@ class TrackerSiamFC(Tracker):
             'response_up': 16,
             'total_stride': 8,
             # train parameters
-            'epoch_num': 50,
+            'epoch_num': 25,
             'batch_size': 8,
-            'num_workers': 32,
+            'num_workers': 2,
             'initial_lr': 1e-2,
             'ultimate_lr': 1e-5,
             'weight_decay': 5e-4,
             'momentum': 0.9,
+            'prune': True,  #### sparsity train
             'r_pos': 16,
+            's':1e-4,   ##### TUNE
             'r_neg': 0}
         
         for key, val in kwargs.items():
@@ -253,7 +277,27 @@ class TrackerSiamFC(Tracker):
                 # back propagation
                 self.optimizer.zero_grad()
                 loss.backward()
+                if self.cfg.prune: ##add gamma grad in bn
+                    self.updateBN()
                 self.optimizer.step()
+        
+        return loss.item()
+    
+    def val_step(self, batch, backward=True):
+        # set network mode
+        self.net.eval()
+
+        # parse batch data
+        z = batch[0].to(self.device, non_blocking=self.cuda)
+        x = batch[1].to(self.device, non_blocking=self.cuda)
+
+        with torch.no_grad():
+            # inference
+            responses = self.net(z, x)
+
+            # calculate loss
+            labels = self._create_labels(responses.size())
+            loss = self.criterion(responses, labels)
         
         return loss.item()
 
@@ -272,9 +316,14 @@ class TrackerSiamFC(Tracker):
             exemplar_sz=self.cfg.exemplar_sz,
             instance_sz=self.cfg.instance_sz,
             context=self.cfg.context)
+        
         dataset = Pair(
             seqs=seqs,
             transforms=transforms)
+        if val_seqs is not None:
+            val_dataset = Pair(
+                seqs=val_seqs,
+                transforms=transforms)
         
         # setup dataloader
         dataloader = DataLoader(
@@ -284,6 +333,14 @@ class TrackerSiamFC(Tracker):
             num_workers=self.cfg.num_workers,
             pin_memory=self.cuda,
             drop_last=True)
+        if val_seqs is not None:
+            val_dataloader = DataLoader(
+                val_dataset,
+                batch_size=self.cfg.batch_size,
+                shuffle=False,
+                num_workers=self.cfg.num_workers,
+                pin_memory=self.cuda,
+                drop_last=False)
         
         # loop over epochs
         for epoch in range(self.cfg.epoch_num):
@@ -291,12 +348,29 @@ class TrackerSiamFC(Tracker):
             self.lr_scheduler.step(epoch=epoch)
 
             # loop over dataloader
-            for it, batch in enumerate(dataloader):
+            sum_loss = 0
+            val_sum_loss = 0
+            tk1 = tqdm(enumerate(dataloader),total = len(dataloader))
+            for it, batch in tk1:
                 loss = self.train_step(batch, backward=True)
-                print('Epoch: {} [{}/{}] Loss: {:.5f}'.format(
-                    epoch + 1, it + 1, len(dataloader), loss))
+                tk1.set_postfix(loss=loss)
+#                 print('Epoch: {} [{}/{}] Loss: {:.5f}'.format(
+#                     epoch + 1, it + 1, len(dataloader), loss))
+                sum_loss += loss
                 sys.stdout.flush()
-            
+#                 if it==5:
+#                     break
+            if val_seqs is not None:
+                tk2 = tqdm(enumerate(val_dataloader),total = len(val_dataloader))
+                for it, batch in tk2:
+                    val_loss = self.val_step(batch, backward=True)
+                    tk2.set_postfix(loss=val_loss)
+                    val_sum_loss += val_loss
+                    sys.stdout.flush()
+#                     if it==5:
+#                         break
+            print('Epoch:{} Loss:{:.5f} Val_loss:{:.5f}'.format(epoch+1,sum_loss/len(dataloader), val_sum_loss/len(val_dataloader)))
+            self.LOGGER.info(f'Epoch {epoch+1} - Loss: {sum_loss:.4f} - Val_loss: {val_sum_loss:.4f}')
             # save checkpoint
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
