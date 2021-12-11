@@ -384,7 +384,7 @@ class TrackerSiamFC(Tracker):
                 os.makedirs(save_dir)
             net_path = os.path.join(
                 save_dir, 'siamfc_alexnet_e%d.pth' % (epoch + 1))
-            torch.save(self.net.state_dict(), net_path)
+            torch.save({'model_state_dict':self.net.state_dict(), 'optimizer':self.optimizer.state_dict(), 'scheduler':self.lr_scheduler.state_dict(),'epoch':epoch}, net_path)
     
     def _create_labels(self, size):
         # skip if same sized labels already created
