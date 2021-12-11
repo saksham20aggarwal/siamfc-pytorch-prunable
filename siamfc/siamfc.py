@@ -52,15 +52,15 @@ class TrackerSiamFC(Tracker):
         self.LOGGER = self.init_logger(log_file = '/kaggle/working/train.log')
 
         # setup model
-        if self.cfg['model_name']=='vgg':
-            self.net = Net(
-            backbone=vgg(),
-            head=SiamFC(self.cfg.out_scale))
+#         if self.cfg['model_name']=='vgg':
+        self.net = Net(
+        backbone=vgg(),
+        head=SiamFC(self.cfg.out_scale))
             
-        elif self.cfg['model_name']=='alexnetv1':
-            self.net = Net(
-                backbone=AlexNetV1(),
-                head=SiamFC(self.cfg.out_scale))
+#         elif self.cfg['model_name']=='alexnetv1':
+#             self.net = Net(
+#                 backbone=AlexNetV1(),
+#                 head=SiamFC(self.cfg.out_scale))
             
         ops.init_weights(self.net)
         
