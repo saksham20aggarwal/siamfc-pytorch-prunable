@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from got10k.trackers import Tracker
 
 from . import ops
-from .backbones import AlexNetV1
+from .backbones import AlexNetV1, vgg
 from .heads import SiamFC
 from .losses import BalancedLoss
 from .datasets import Pair
