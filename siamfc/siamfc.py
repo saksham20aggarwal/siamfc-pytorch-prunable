@@ -52,9 +52,16 @@ class TrackerSiamFC(Tracker):
         self.LOGGER = self.init_logger(log_file = '/kaggle/working/train.log')
 
         # setup model
-        self.net = Net(
-            backbone=AlexNetV1(),
+        if self.cfg['model_name']=='vgg':
+            self.net = Net(
+            backbone=vgg(),
             head=SiamFC(self.cfg.out_scale))
+            
+        else if self.cfg['model_name']=='alexnetv1':
+            self.net = Net(
+                backbone=AlexNetV1(),
+                head=SiamFC(self.cfg.out_scale))
+            
         ops.init_weights(self.net)
         
         # load checkpoint if provided
@@ -123,9 +130,10 @@ class TrackerSiamFC(Tracker):
             'ultimate_lr': 1e-5,
             'weight_decay': 5e-4,
             'momentum': 0.9,
-            'prune': True,  #### sparsity train
             'r_pos': 16,
+            'prune': True,  #### sparsity train
             's':1e-4,   ##### TUNE
+            'model_name':'vgg',
             'r_neg': 0}
         
         for key, val in kwargs.items():
