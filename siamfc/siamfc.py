@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import sys
-sys.path.append('/kaggle/working/siamfc-pytorch')
+sys.path.append('/kaggle/working/siamfc-pytorch-prunable')
 print(sys.path)
 import torch
 import torch.nn as nn
@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from got10k.trackers import Tracker
 
 from . import ops
-from .backbones import AlexNetV1
+from .backbones import AlexNetV1, vgg
 from .heads import SiamFC
 from .losses import BalancedLoss
 from .datasets import Pair
@@ -52,9 +52,16 @@ class TrackerSiamFC(Tracker):
         self.LOGGER = self.init_logger(log_file = '/kaggle/working/train.log')
 
         # setup model
+#         if self.cfg['model_name']=='vgg':
         self.net = Net(
-            backbone=AlexNetV1(),
-            head=SiamFC(self.cfg.out_scale))
+        backbone=vgg(),
+        head=SiamFC(self.cfg.out_scale))
+            
+#         elif self.cfg['model_name']=='alexnetv1':
+#             self.net = Net(
+#                 backbone=AlexNetV1(),
+#                 head=SiamFC(self.cfg.out_scale))
+            
         ops.init_weights(self.net)
         
         # load checkpoint if provided
@@ -117,15 +124,16 @@ class TrackerSiamFC(Tracker):
             'total_stride': 8,
             # train parameters
             'epoch_num': 25,
-            'batch_size': 8,
+            'batch_size': 32,
             'num_workers': 2,
             'initial_lr': 1e-2,
             'ultimate_lr': 1e-5,
             'weight_decay': 5e-4,
             'momentum': 0.9,
-            'prune': True,  #### sparsity train
             'r_pos': 16,
+            'prune': True,  #### sparsity train
             's':1e-4,   ##### TUNE
+            'model_name':'vgg',
             'r_neg': 0}
         
         for key, val in kwargs.items():
@@ -370,13 +378,13 @@ class TrackerSiamFC(Tracker):
 #                     if it==5:
 #                         break
             print('Epoch:{} Loss:{:.5f} Val_loss:{:.5f}'.format(epoch+1,sum_loss/len(dataloader), val_sum_loss/len(val_dataloader)))
-            self.LOGGER.info(f'Epoch {epoch+1} - Loss: {sum_loss:.4f} - Val_loss: {val_sum_loss:.4f}')
+            self.LOGGER.info(f'Epoch {epoch+1} - Loss: {sum_loss/len(dataloader):.4f} - Val_loss: {val_sum_loss/len(val_loader):.4f}')
             # save checkpoint
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             net_path = os.path.join(
                 save_dir, 'siamfc_alexnet_e%d.pth' % (epoch + 1))
-            torch.save(self.net.state_dict(), net_path)
+            torch.save({'model_state_dict':self.net.state_dict(), 'optimizer':self.optimizer.state_dict(), 'scheduler':self.lr_scheduler.state_dict(),'epoch':epoch}, net_path)
     
     def _create_labels(self, size):
         # skip if same sized labels already created
