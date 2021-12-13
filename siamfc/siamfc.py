@@ -378,7 +378,7 @@ class TrackerSiamFC(Tracker):
 #                     if it==5:
 #                         break
             print('Epoch:{} Loss:{:.5f} Val_loss:{:.5f}'.format(epoch+1,sum_loss/len(dataloader), val_sum_loss/len(val_dataloader)))
-            self.LOGGER.info(f'Epoch {epoch+1} - Loss: {sum_loss/len(dataloader):.4f} - Val_loss: {val_sum_loss/len(val_loader):.4f}')
+            self.LOGGER.info(f'Epoch {epoch+1} - Loss: {sum_loss/len(dataloader):.4f} - Val_loss: {val_sum_loss/len(val_dataloader):.4f}')
             # save checkpoint
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
