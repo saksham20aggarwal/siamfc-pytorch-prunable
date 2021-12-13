@@ -132,7 +132,7 @@ class TrackerSiamFC(Tracker):
             'momentum': 0.9,
             'r_pos': 16,
             'prune': True,  #### sparsity train
-            's':1e-4,   ##### TUNE
+            's':3e-3,   ##### TUNE
             'model_name':'vgg',
             'r_neg': 0}
         
