@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import math
 import torch
 import torch.nn as nn
+from .channel_selection import channel_selection
 
 __all__ = ['AlexNetV1', 'AlexNetV2', 'AlexNetV3', 'vgg']
 
