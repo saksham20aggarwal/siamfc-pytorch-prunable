@@ -58,7 +58,7 @@ class TrackerSiamFC(Tracker):
 #         backbone=vgg(),
 #         head=SiamFC(self.cfg.out_scale))
         self.net = Net(
-                        backbone=resnet(depth=50),
+                        backbone=resnet(depth=56),
                         head=SiamFC(self.cfg.out_scale))
             
 #         elif self.cfg['model_name']=='alexnetv1':
