@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from got10k.trackers import Tracker
 
 from . import ops
-from .backbones import AlexNetV1, vgg
+from .backbones import AlexNetV1, vgg,resnet
 from .heads import SiamFC
 from .losses import BalancedLoss
 from .datasets import Pair
@@ -53,9 +53,13 @@ class TrackerSiamFC(Tracker):
 
         # setup model
 #         if self.cfg['model_name']=='vgg':
+#vgg
+#         self.net = Net(
+#         backbone=vgg(),
+#         head=SiamFC(self.cfg.out_scale))
         self.net = Net(
-        backbone=vgg(),
-        head=SiamFC(self.cfg.out_scale))
+                        backbone=resnet(depth=50),
+                        head=SiamFC(self.cfg.out_scale))
             
 #         elif self.cfg['model_name']=='alexnetv1':
 #             self.net = Net(
@@ -383,7 +387,7 @@ class TrackerSiamFC(Tracker):
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             net_path = os.path.join(
-                save_dir, 'siamfc_alexnet_e%d.pth' % (epoch + 1))
+                save_dir, 'siamfc_resnet_e%d.pth' % (epoch + 1))
             torch.save({'model_state_dict':self.net.state_dict(), 'optimizer':self.optimizer.state_dict(), 'scheduler':self.lr_scheduler.state_dict(),'epoch':epoch}, net_path)
     
     def _create_labels(self, size):
