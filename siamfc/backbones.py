@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from .channel_selection import channel_selection
 
-__all__ = ['AlexNetV1', 'AlexNetV2', 'AlexNetV3', 'vgg']
+__all__ = ['AlexNetV1', 'AlexNetV2', 'AlexNetV3', 'vgg','resnet']
 
 
 class _BatchNorm2d(nn.BatchNorm2d):
