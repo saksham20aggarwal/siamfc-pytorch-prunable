@@ -37,7 +37,7 @@ class AlexNetV1(_AlexNet):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, 2))
         self.conv2 = nn.Sequential(
-            nn.Conv2d(96, 256, 5, 1, groups=2),
+            nn.Conv2d(96, 256, 5, 1),
             _BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, 2))
@@ -46,11 +46,11 @@ class AlexNetV1(_AlexNet):
             _BatchNorm2d(384),
             nn.ReLU(inplace=True))
         self.conv4 = nn.Sequential(
-            nn.Conv2d(384, 384, 3, 1, groups=2),
+            nn.Conv2d(384, 384, 3, 1),
             _BatchNorm2d(384),
             nn.ReLU(inplace=True))
         self.conv5 = nn.Sequential(
-            nn.Conv2d(384, 256, 3, 1, groups=2))
+            nn.Conv2d(384, 256, 3, 1))
 
 
 class AlexNetV2(_AlexNet):
@@ -64,7 +64,7 @@ class AlexNetV2(_AlexNet):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, 2))
         self.conv2 = nn.Sequential(
-            nn.Conv2d(96, 256, 5, 1, groups=2),
+            nn.Conv2d(96, 256, 5, 1),
             _BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, 1))
@@ -73,11 +73,11 @@ class AlexNetV2(_AlexNet):
             _BatchNorm2d(384),
             nn.ReLU(inplace=True))
         self.conv4 = nn.Sequential(
-            nn.Conv2d(384, 384, 3, 1, groups=2),
+            nn.Conv2d(384, 384, 3, 1),
             _BatchNorm2d(384),
             nn.ReLU(inplace=True))
         self.conv5 = nn.Sequential(
-            nn.Conv2d(384, 32, 3, 1, groups=2))
+            nn.Conv2d(384, 32, 3, 1))
 
 
 class AlexNetV3(_AlexNet):
